@@ -1,0 +1,23 @@
+FluoLab optional offline literature CPU component v1
+
+The component is separate from the main .NET application. No document or laboratory record is included. Original package license and copyright files are retained in python/LICENSE.txt, python/Lib/site-packages/*dist-info/licenses, the package directories and model/README.md. Consult those files for complete terms and notices, including bundled native libraries.
+
+Python 3.12.10: Python Software Foundation License. https://www.python.org/
+CTranslate2 4.6.0: MIT. https://github.com/OpenNMT/CTranslate2
+SentencePiece 0.2.1: Apache-2.0. https://github.com/google/sentencepiece
+NumPy 2.2.6: BSD-3-Clause with bundled-library notices. https://numpy.org/
+pypdfium2 5.14.0: Apache-2.0 OR BSD-3-Clause; PDFium BSD-style and third-party notices retained. https://github.com/pypdfium2-team/pypdfium2
+Pillow 12.3.0: MIT-CMU and bundled-library notices. https://python-pillow.github.io/
+PyYAML 6.0.3: MIT. https://pyyaml.org/
+setuptools 80.9.0: MIT and vendored-library notices. https://github.com/pypa/setuptools
+
+English-Chinese model: Argos translate-en_zh-1_9, based on OPUS-MT.
+Original model authors: Jorg Tiedemann and Santhosh Thottingal.
+Citation: OPUS-MT -- Building open translation services for the World, EAMT 2020.
+Model license: Creative Commons Attribution 4.0 International (CC-BY-4.0).
+Source: https://argos-net.com/v1/translate-en_zh-1_9.argosmodel
+Project: https://github.com/Helsinki-NLP/Opus-MT
+Full model attribution retained in model/README.md; legal text in model/CC-BY-4.0.txt.
+The distributed Argos model is used as received; CTranslate2 CPU int8 is selected at runtime. FluoLab adds paragraph reflow, bounded token chunks and page-linked review output. Authors do not endorse FluoLab. Translation is not a certified scientific or medical translation.
+
+This file is attribution, not an assertion of ownership over third-party work. Source URLs, versions and artifact hashes are recorded in component.json.
