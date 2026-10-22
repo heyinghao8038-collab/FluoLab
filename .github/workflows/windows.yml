@@ -26,8 +26,13 @@ jobs:
       - name: WPF controls and lifecycle tests
         shell: powershell
         run: |
-          & .\artifacts\build\FluoLab.UiTests.exe
-          if ($LASTEXITCODE -ne 0) { throw 'UI tests failed.' }
+          $uiOutput = & .\artifacts\build\FluoLab.UiTests.exe 2>&1
+          $uiExitCode = $LASTEXITCODE
+          $uiOutput | ForEach-Object { Write-Host $_ }
+          if ($uiExitCode -ne 0) {
+            $uiOutput | ForEach-Object { Write-Host ('::error::' + ($_.ToString() -replace '%','%25' -replace "`r",'%0D' -replace "`n",'%0A')) }
+            throw 'UI tests failed.'
+          }
   mouse-source:
     runs-on: windows-latest
     timeout-minutes: 15
