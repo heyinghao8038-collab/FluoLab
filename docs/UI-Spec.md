@@ -2,6 +2,12 @@
 
 This file is the visual source of truth for the first release.
 
+## Version 1.4 Completeness and Literature Review
+
+Keep Theme colors, native frame and wrapping Quick Actions. Add a secondary `批次完整性` action, disabled before import/during loading. Open an owned snapshot window with count/coverage summary, explicit non-QC explanation, filename filter and a virtualized read-only grid (file/status/points/range/missing count). Show empty/all-failed/no-common-point states in text; export a separate summary, never alter the raw workbook. Long names scroll and have full tooltips.
+
+Literature retains its two original read-only tabs and adds `人工核对` and `术语备注`. The review tab has a wrapping explicit state selector/save action, a stale-machine warning and editable human draft, with an expandable scrollable revision history. The machine translation is never edited in place. Notes explain that terminology is manually maintained and not used to silently rewrite model output. Commands/export are disabled during worker I/O; review edits participate in the existing unsaved guard. Fixed synthetic screenshots cover normal, long text and narrow/high-scale states before connecting real documents.
+
 ## Version 1.3.1 Native Frame and Footer Override
 
 This supersedes the custom caption strip below. Use the ordinary Windows title bar and border, including system caption buttons and native title drag/resize behavior. Preserve the light Theme client area. The release title includes 1.3.1 for main-window identification. Do not use a PNG title-bar reference as a UI asset.

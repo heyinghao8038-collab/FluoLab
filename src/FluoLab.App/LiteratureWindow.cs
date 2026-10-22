@@ -28,11 +28,18 @@ namespace FluoLab.App
         private readonly Image pageImage = new Image { Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Center };
         private readonly TextBox original = ReadingBox();
         private readonly TextBox chinese = ReadingBox();
+        private readonly TextBox reviewDraft = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = 15, MaxLength = 100000 };
+        private readonly TextBox termNotes = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = 14, MaxLength = 16000 };
+        private readonly TextBox revisionHistory = ReadingBox();
+        private readonly ComboBox reviewState = new ComboBox { MinWidth = 135, Margin = new Thickness(0, 0, 8, 6) };
+        private readonly Button saveReview = new Button { Content = "保存本页核对", Margin = new Thickness(0, 0, 0, 6) };
+        private readonly TextBlock reviewLabel = Note("");
+        private readonly TabControl texts = new TabControl { HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
         private readonly Button importButton, previousButton, nextButton, pageButton, allButton, cancelButton, exportButton, installButton;
         private LiteratureDocument document;
         private string workFolder, sourcePath, documentPath;
         private int pageIndex;
-        private bool verified, busy, dirty, qaMode;
+        private bool verified, busy, dirty, qaMode, refreshingReview, reviewPending;
         private CancellationTokenSource cancellation;
 
         public LiteratureWindow()
@@ -57,14 +64,36 @@ namespace FluoLab.App
             var pages = new ScrollViewer { Content = pageImage, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Background = Theme.SecondarySurfaceBrush };
             pages.SizeChanged += delegate { pageImage.Width = Math.Max(100, pages.ActualWidth - 20); };
             body.Children.Add(pages); var divider = new GridSplitter { Width = 6, HorizontalAlignment = HorizontalAlignment.Center, Background = Theme.DividerBrush }; Grid.SetColumn(divider, 1); body.Children.Add(divider);
-            var texts = new TabControl(); texts.Items.Add(new TabItem { Header = "机器中文译文", Content = chinese }); texts.Items.Add(new TabItem { Header = "原文提取（供核对）", Content = original }); Grid.SetColumn(texts, 2); body.Children.Add(texts);
+            texts.Items.Add(new TabItem { Header = "机器译文", Content = chinese }); texts.Items.Add(new TabItem { Header = "原文", Content = original });
+            texts.Items.Add(new TabItem { Header = "人工核对", Content = BuildReviewPanel(), HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch });
+            var terms = new DockPanel(); var termsHelp = Note("手工记录本文术语，例如 fluorescence → 荧光。备注不会约束模型或自动替换译文；请按原文语境核对。随中英对照报告导出，关闭前请导出。"); DockPanel.SetDock(termsHelp, Dock.Top); terms.Children.Add(termsHelp); terms.Children.Add(termNotes);
+            texts.Items.Add(new TabItem { Header = "术语备注", Content = terms }); Grid.SetColumn(texts, 2); body.Children.Add(texts);
             Grid.SetRow(body, 3); root.Children.Add(body);
             var footer = new StackPanel(); footer.Children.Add(status); footer.Children.Add(new TextBlock { Text = LiteratureReport.ReviewWarning + " 扫描 OCR 暂不支持，多栏提取顺序需核对。", Foreground = Theme.WarningBrush, FontSize = 12, TextWrapping = TextWrapping.Wrap });
             Grid.SetRow(footer, 4); root.Children.Add(footer); Content = root;
             componentLabel.Text = LiteratureComponent.Available(componentRoot) ? "离线组件已安装，正在检查运行环境…" : "离线组件未安装 · 支持配套 CPU 组件包，无账号、无在线回退";
             SetControls(); Loaded += async delegate { if (!qaMode && LiteratureComponent.Available(componentRoot)) await Probe(); };
+            reviewDraft.TextChanged += delegate {
+                if (refreshingReview || document == null) return;
+                reviewState.SelectedIndex = 0; reviewPending = true; dirty = true; reviewLabel.Text = "核对稿已修改，原核对状态失效。请重新核对并保存。";
+            };
+            reviewState.SelectionChanged += delegate { if (!refreshingReview && document != null) { reviewPending = true; dirty = true; } };
+            termNotes.TextChanged += delegate { if (!refreshingReview && document != null) { document.TermNotes = termNotes.Text; dirty = true; } };
+            saveReview.Click += delegate { if (CommitReview(true)) status.Text = "本页核对已保存在当前会话。关闭前请导出中英对照，包含修订记录。"; };
             Closing += BeforeClose;
             Closed += delegate { if (cancellation != null) cancellation.Cancel(); CleanupWorkFolder(); };
+        }
+        private UIElement BuildReviewPanel()
+        {
+            var root = new Grid(); root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); root.RowDefinitions.Add(new RowDefinition()); root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var top = new StackPanel();
+            top.Children.Add(Note("人工稿不覆盖机器译文；按页对照原 PDF 核对，不自动对齐段落。"));
+            var actions = new WrapPanel();
+            foreach (var state in new[] { "未核对", "已人工核对", "有疑问" }) reviewState.Items.Add(state);
+            reviewState.SelectedIndex = 0; actions.Children.Add(reviewState); actions.Children.Add(saveReview); top.Children.Add(actions); top.Children.Add(reviewLabel);
+            root.Children.Add(top); Grid.SetRow(reviewDraft, 1); root.Children.Add(reviewDraft);
+            revisionHistory.Height = 140;
+            var history = new Expander { Header = "修订记录（只读，可展开）", Content = revisionHistory, Margin = new Thickness(0, 6, 0, 0) }; Grid.SetRow(history, 2); root.Children.Add(history); return root;
         }
         private LiteratureWorker Worker() { return new LiteratureWorker(componentRoot, workerScript); }
         private IProgress<LiteratureProgress> Progress(string label)
@@ -134,6 +163,7 @@ namespace FluoLab.App
         private async void Navigate(int direction)
         {
             if (busy || document == null) return;
+            if (!CommitReview(false)) return;
             pageIndex = Math.Max(0, Math.Min(document.Pages.Count - 1, pageIndex + direction)); busy = true; SetControls();
             try { await RenderPage(); } catch (Exception error) { status.Text = "页面显示失败：" + error.Message; }
             finally { busy = false; SetControls(); }
@@ -150,16 +180,35 @@ namespace FluoLab.App
         private void ShowTexts()
         {
             if (document == null) return;
+            refreshingReview = true;
             var page = document.Pages[pageIndex]; original.Text = page.OriginalText ?? ""; chinese.Text = string.IsNullOrWhiteSpace(page.ChineseText) ? "此页尚未翻译。点击“翻译当前页”或“翻译全文”。无文本页面不支持 OCR。" : page.ChineseText;
             pageLabel.Text = "第 " + (pageIndex + 1) + "/" + document.Pages.Count + " 页 · " + page.Status + (page.NumericReview ? " · 数字标记与原文不同，必须核对" : "");
+            reviewDraft.Text = page.Review == null ? page.ChineseText ?? "" : page.Review.Draft ?? "";
+            reviewState.SelectedIndex = page.Review == null ? 0 : (int)page.Review.State;
+            reviewLabel.Text = LiteratureReview.IsStale(page) ? "机器译文已变化：旧稿仅供对照，请重新核对。" : page.Review == null ? "尚无核对记录。修改后请保存本页核对。" : LiteratureReview.StateLabel(page.Review.State) + " · " + DateTimeOffset.Parse(page.Review.SavedAt, System.Globalization.CultureInfo.InvariantCulture).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+            termNotes.Text = document.TermNotes ?? "";
+            revisionHistory.Text = page.Review == null || page.Review.History == null ? "尚无修订记录。" : string.Join("\r\n\r\n", page.Review.History.Select(x => x.SavedAt + " · " + LiteratureReview.StateLabel(x.State) + "\r\n[当时机器译文]\r\n" + x.MachineText + "\r\n[人工稿]\r\n" + x.Draft));
+            reviewPending = false; refreshingReview = false;
+        }
+        private bool CommitReview(bool explicitSave)
+        {
+            if (document == null || (!reviewPending && !explicitSave)) return true;
+            try {
+                LiteratureReview.Save(document.Pages[pageIndex], reviewDraft.Text, (LiteratureReviewState)reviewState.SelectedIndex, DateTimeOffset.Now);
+                dirty = true; ShowTexts(); return true;
+            }
+            catch (Exception error) { status.Text = "核对未保存：" + error.Message; return false; }
         }
         private async void Translate(bool all) { await TranslatePages(all); }
         internal async Task TranslatePages(bool all)
         {
             if (busy || document == null) return;
+            if (!CommitReview(false)) return;
             busy = true; cancellation = new CancellationTokenSource(); SetControls();
+            var checkpointReady = false;
             try
             {
+                await Task.Run(delegate { LiteratureWorker.WriteDocument(documentPath, document); }); checkpointReady = true;
                 await Worker().RunAsync(new[] { "translate", sourcePath, documentPath, all ? "all" : pageIndex.ToString(System.Globalization.CultureInfo.InvariantCulture), componentRoot }, Progress("离线翻译"), cancellation.Token);
                 document = LiteratureWorker.ReadDocument(documentPath); dirty = true; ShowTexts(); status.Text = "机器翻译完成。请对照原文逐页核对，尤其是术语、否定关系、数字和单位。";
             }
@@ -169,7 +218,7 @@ namespace FluoLab.App
             }
             catch (Exception error)
             {
-                try { document = LiteratureWorker.ReadDocument(documentPath); dirty = document.Pages.Any(x => !string.IsNullOrWhiteSpace(x.ChineseText)); ShowTexts(); }
+                try { if (checkpointReady) document = LiteratureWorker.ReadDocument(documentPath); dirty = true; ShowTexts(); }
                 catch (Exception) { dirty = true; }
                 status.Text = "翻译失败：" + error.Message + " 已完成的页面仍可导出，未完成内容不做补写。";
             }
@@ -178,6 +227,7 @@ namespace FluoLab.App
         private async void Export()
         {
             if (busy || document == null) return;
+            if (!CommitReview(false)) return;
             var picker = new SaveFileDialog { Title = "导出逐页中英对照", Filter = "HTML 中英对照 (*.html)|*.html|UTF-8 文本 (*.txt)|*.txt", DefaultExt = ".html", AddExtension = true, OverwritePrompt = true,
                 FileName = Path.GetFileNameWithoutExtension(document.FileName) + "_中英对照.html" };
             if (picker.ShowDialog(this) != true) return;
@@ -186,7 +236,7 @@ namespace FluoLab.App
             {
                 var snapshot = document; var html = picker.FilterIndex == 1;
                 await Task.Run(delegate { AtomicOutput.Write(picker.FileName, true, temp => File.WriteAllText(temp, html ? LiteratureReport.Html(snapshot) : LiteratureReport.Text(snapshot), new UTF8Encoding(true))); });
-                dirty = false; status.Text = "中英对照已导出。包含页码、原文、机器译文、状态、引擎模型和源文件指纹，不含本地绝对路径。";
+                dirty = false; status.Text = "已导出原文、原始机器译文、人工稿、核对状态、全部修订和术语备注，按页可追溯。不含源文件绝对路径。";
             }
             catch (Exception error) { status.Text = "导出失败：" + error.Message + " 请关闭占用文件或选择其他位置重试。"; }
             finally { busy = false; SetControls(); }
@@ -197,11 +247,12 @@ namespace FluoLab.App
             previousButton.IsEnabled = !busy && document != null && pageIndex > 0; nextButton.IsEnabled = !busy && document != null && pageIndex + 1 < document.Pages.Count;
             pageButton.IsEnabled = !busy && document != null && !string.IsNullOrWhiteSpace(document.Pages[pageIndex].OriginalText);
             allButton.IsEnabled = !busy && document != null && document.Pages.Any(x => !string.IsNullOrWhiteSpace(x.OriginalText)); cancelButton.IsEnabled = busy && cancellation != null; exportButton.IsEnabled = !busy && document != null;
+            reviewDraft.IsEnabled = !busy && document != null; reviewState.IsEnabled = !busy && document != null; saveReview.IsEnabled = !busy && document != null; termNotes.IsEnabled = !busy && document != null;
         }
         private bool ConfirmDiscard()
         {
             if (!dirty) return true;
-            if (MessageBox.Show(this, "有未导出的译文。请先点击“导出中英对照”保存。仍要放弃并继续吗？", "未导出译文", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return false;
+            if (MessageBox.Show(this, "有未导出的译文、人工核对或术语备注。请先点击“导出中英对照”保存；本版不恢复阅读工程。仍要放弃并继续吗？", "未导出阅读记录", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return false;
             dirty = false; return true;
         }
         internal bool CanClose()
@@ -225,6 +276,9 @@ namespace FluoLab.App
             qaMode = true; verified = true;
             document = new LiteratureDocument { FileName = "模拟英文文章.pdf", Pages = new List<LiteraturePage> { new LiteraturePage { Number = 1, OriginalText = "Simulated text for interface verification.\nFluorescence intensity was measured at 600 nm.", ChineseText = "用于界面检查的固定模拟译文。\n在 600 nm 下测量荧光强度。\n此状态尚未调用推理引擎。", Status = "固定模拟界面" } } };
             documentLabel.Text = "模拟英文文章.pdf · 固定数据界面检查，不是实验文献"; componentLabel.Text = "模拟数据 · 仅验证布局，真实运行须安装配套离线组件";
+            document.TermNotes = "【模拟术语备注，非术语规范】\nfluorescence → 荧光\nprobe → 探针（需按上下文核对）";
+            LiteratureReview.Save(document.Pages[0], "【模拟人工稿】\n用于界面检查的固定模拟内容。\n在 600 nm 下测量荧光强度。\n仍需核对原文语义。", LiteratureReviewState.Questionable, DateTimeOffset.Now);
+            texts.SelectedIndex = 2;
             if (File.Exists(imagePath)) { var bitmap = new BitmapImage(new Uri(Path.GetFullPath(imagePath))); pageImage.Source = bitmap; }
             ShowTexts(); status.Text = "固定模拟页面。真实翻译质量须人工核对。"; SetControls();
         }

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace FluoLab.Core
 {
@@ -77,6 +78,20 @@ namespace FluoLab.Core
                 }
                 File.WriteAllText(path, builder.ToString(), Encoding.UTF8);
             }
+        }
+        public static SpectrumBatch ReadAscFiles(string folder)
+        {
+            var batch = new BatchProcessor().ProcessFolder(folder, null, CancellationToken.None);
+            var expected = CreateBatch();
+            if (batch.Files.Length != expected.Files.Length) throw new InvalidOperationException("模拟 ASC 数量不一致，未将该目录作为公开演示数据导出。");
+            foreach (var source in expected.Files)
+            {
+                var actual = batch.Files.SingleOrDefault(file => string.Equals(file.FileName, source.FileName, StringComparison.Ordinal));
+                if (actual == null || actual.Status != source.Status || (source.Dataset != null &&
+                    (!actual.Dataset.Wavelengths.SequenceEqual(source.Dataset.Wavelengths) || !actual.Dataset.Intensities.SequenceEqual(source.Dataset.Intensities))))
+                    throw new InvalidOperationException("模拟 ASC 内容已改变，未将其作为公开演示数据导出。");
+            }
+            return batch;
         }
     }
 }

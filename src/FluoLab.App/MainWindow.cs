@@ -51,6 +51,7 @@ namespace FluoLab.App
         private Button chooseFolderButton;
         private Button exportButton;
         private Button phButton;
+        private Button completenessButton;
         private PhAnalysisWindow phWindow;
         private Button openOutputButton;
         private Button logButton;
@@ -68,7 +69,7 @@ namespace FluoLab.App
 
         public MainWindow()
         {
-            Title = "FluoLab 荧光数据分析器 · 1.3.1";
+            Title = "FluoLab 荧光数据分析器 · 1.4.0";
             Width = 1440;
             Height = 900;
             MinWidth = 800;
@@ -560,6 +561,19 @@ namespace FluoLab.App
             var openProject = new Button { Content = "打开工作项目", Style = (Style)FindResource("QuickActionButton") };
             openProject.Click += delegate { OpenWorkProject(); };
             moduleActions.Children.Add(openProject);
+            completenessButton = new Button { Content = "批次完整性", Style = (Style)FindResource("QuickActionButton"), IsEnabled = false };
+            completenessButton.Click += async delegate {
+                if (currentBatch == null || isLoading) return;
+                var snapshot = currentBatch; completenessButton.IsEnabled = false; SetStatus("正在检查波长覆盖，不改变原始数据…", Theme.AccentBrush);
+                try {
+                    var report = await Task.Run(delegate { return BatchCompleteness.Create(snapshot, CancellationToken.None); });
+                    if (!ReferenceEquals(currentBatch, snapshot) || isLoading || !IsVisible) return;
+                    new BatchCompletenessWindow(report) { Owner = this }.Show(); SetStatus("完整性检查完成；未改变预览、分析参与状态或导出范围。", Theme.SuccessBrush);
+                }
+                catch (Exception error) { SetStatus("完整性检查失败：" + error.Message + " 请重新导入后重试。", Theme.ErrorBrush); }
+                finally { completenessButton.IsEnabled = !isLoading && currentBatch != null; }
+            };
+            moduleActions.Children.Add(completenessButton);
             var laboratory = new Button { Content = "实验室工具", Style = (Style)FindResource("QuickActionButton"),
                 Background = new SolidColorBrush(Color.FromRgb(0xE8, 0xF2, 0xFF)), ToolTip = "文献阅读与离线翻译、小鼠管理" };
             laboratory.Click += delegate
@@ -761,6 +775,7 @@ namespace FluoLab.App
         {
             chooseFolderButton.IsEnabled = !loading;
             phButton.IsEnabled = !loading && currentBatch != null && currentBatch.SuccessCount > 0;
+            completenessButton.IsEnabled = !loading && currentBatch != null;
             exportButton.IsEnabled = !loading && !isExporting && currentBatch != null && currentBatch.SuccessCount > 0;
             cancelButton.Visibility = loading ? Visibility.Visible : Visibility.Collapsed;
             importProgress.Visibility = loading ? Visibility.Visible : Visibility.Collapsed;
@@ -779,6 +794,8 @@ namespace FluoLab.App
         {
             if (phWindow != null) { phWindow.Close(); if (phWindow != null && phWindow.IsVisible) return; }
             currentBatch = batch;
+            foreach (var summary in OwnedWindows.OfType<BatchCompletenessWindow>().ToArray()) summary.Close();
+            completenessButton.IsEnabled = true;
             phButton.IsEnabled = batch.SuccessCount > 0;
             fileRows.Clear();
             fileRowsPanel.Children.Clear();

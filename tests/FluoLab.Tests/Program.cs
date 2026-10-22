@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -25,7 +25,10 @@ namespace FluoLab.Tests
                 RunParserAndExportTests(tempRoot);
                 PhAnalysisTests.Run(tempRoot);
                 LaboratoryTests.Run(tempRoot);
+                FinalsTests.Run(tempRoot);
                 RunPerformanceTest(tempRoot);
+
+
                 Console.WriteLine("PASS: all FluoLab tests completed.");
                 return 0;
             }

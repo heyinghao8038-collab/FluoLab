@@ -8002,7 +8002,7 @@ var e = Object.create, t = Object.defineProperty, n = Object.getOwnPropertyDescr
 		}
 	}
 	n(), t.exports = h();
-})), _ = /* @__PURE__ */ c(u()), v = g();
+})), _ = /* @__PURE__ */ c(u(), 1), v = g();
 function y(e) {
 	let t = (e) => typeof e == "object" && !!e && !Array.isArray(e), n = (e) => typeof e == "string" && e.length <= 1e4, r = (e) => n(e) && /^\d{4}-\d{2}-\d{2}$/.test(e) && Number.isFinite(Date.parse(e));
 	if (!t(e) || e.version !== 2 || !Array.isArray(e.cages) || !Array.isArray(e.breedings) || !Array.isArray(e.logs) || e.cages.length > 1e4 || e.breedings.length > 1e4 || e.logs.length > 1e5) return !1;
@@ -9484,6 +9484,6 @@ function ye({ cage: e, allCages: t, onClose: n }) {
 	});
 }
 //#endregion
-//#region Modules/Mouse/source/entry.tsx
+//#region source/entry.tsx
 (0, v.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, S.jsx)(D, {}));
 //#endregion

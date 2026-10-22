@@ -1,0 +1,47 @@
+name: Windows build and synthetic tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  framework:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build with Windows .NET Framework compiler
+        shell: powershell
+        run: .\build.ps1
+      - name: Scientific and synthetic boundary tests
+        shell: powershell
+        run: |
+          & .\artifacts\build\FluoLab.Tests.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+      - name: WPF controls and lifecycle tests
+        shell: powershell
+        run: |
+          & .\artifacts\build\FluoLab.UiTests.exe
+          if ($LASTEXITCODE -ne 0) { throw 'UI tests failed.' }
+  mouse-source:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Modules/Mouse/package-lock.json
+      - name: Restore locked frontend dependencies
+        working-directory: Modules/Mouse
+        run: npm ci --ignore-scripts
+      - name: Strict TypeScript and frontend build
+        working-directory: Modules/Mouse
+        run: npm run build

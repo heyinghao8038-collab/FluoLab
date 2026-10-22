@@ -26,7 +26,8 @@ namespace FluoLab.App
                 isLoading = true; importCancellation = new System.Threading.CancellationTokenSource(); SetLoadingState("工作项目", true);
                 var project = await Task.Run(delegate { return WorkProjectStore.Read(dialog.FileName); });
                 string folder = null;
-                if (!project.Synthetic)
+                var virtualSynthetic = project.Synthetic && string.IsNullOrWhiteSpace(project.SourceFolder);
+                if (!virtualSynthetic)
                 {
                     try { folder = WorkProjectStore.ResolveFolder(project, dialog.FileName); }
                     catch (InvalidOperationException) { }
@@ -48,7 +49,7 @@ namespace FluoLab.App
                     importProgress.Maximum = Math.Max(1, value.Total); importProgress.Value = value.Completed;
                     progressText.Text = "正在核对源文件 " + value.Completed + "/" + value.Total;
                 });
-                var batch = await Task.Run(delegate { return project.Synthetic ? PhDemo.CreateBatch() : processor.ProcessFolder(folder, progress, importCancellation.Token); });
+                var batch = await Task.Run(delegate { return virtualSynthetic ? PhDemo.CreateBatch() : processor.ProcessFolder(folder, progress, importCancellation.Token); });
                 watch.Stop(); var parseElapsed = watch.Elapsed;
                 importCancellation.Token.ThrowIfCancellationRequested();
                 var restored = await Task.Run(delegate { return WorkProjectStore.Restore(project, batch); });

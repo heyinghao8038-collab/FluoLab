@@ -3,8 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const dependencyRoot = process.argv[2];
-if (!dependencyRoot) throw new Error('Pass the existing mouse-project node_modules directory. No source records are read.');
+const dependencyRoot = path.resolve(process.argv[2] || path.join(root, 'Modules/Mouse/node_modules'));
 const { build } = await import(pathToFileURL(path.join(dependencyRoot, 'vite/dist/node/index.js')).href);
 const { default: ts } = await import(pathToFileURL(path.join(dependencyRoot,'typescript/lib/typescript.js')).href);
 const program = ts.createProgram(['entry.tsx','MiceApp.tsx','validation.ts'].map(file => path.join(root,'Modules/Mouse/source',file)), {

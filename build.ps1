@@ -1,5 +1,6 @@
 ﻿param(
-    [string]$Configuration = 'Release'
+    [string]$Configuration = 'Release',
+    [string]$DistributionDirectory = ''
 )
 
 Set-StrictMode -Version 2.0
@@ -10,8 +11,8 @@ $csc = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 $framework = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319'
 $assemblyRoot = 'C:\Windows\Microsoft.NET\assembly'
 $build = Join-Path $root 'artifacts\build'
-$portable = Join-Path $root 'dist\FluoLab'
-$dist = Join-Path $root 'dist'
+$dist = if ($DistributionDirectory) { [IO.Path]::GetFullPath($DistributionDirectory) } else { Join-Path $root 'dist' }
+$portable = Join-Path $dist 'FluoLab'
 
 if (-not (Test-Path -LiteralPath $csc)) {
     throw '.NET Framework 4.8 compiler was not found.'
@@ -28,7 +29,7 @@ $exportPath = Join-Path $build 'FluoLab.Export.dll'
 $cliPath = Join-Path $build 'FluoLab.Cli.exe'
 $appPath = Join-Path $build 'FluoLab.exe'
 $testsPath = Join-Path $build 'FluoLab.Tests.exe'
-$setupPath = Join-Path $dist 'FluoLab-Setup-1.3.1.exe'
+$setupPath = Join-Path $dist 'FluoLab-Setup-1.4.0.exe'
 
 & $csc @common /target:library "/out:$corePath" `
     "/reference:$(Join-Path $framework 'System.Web.Extensions.dll')" `
@@ -37,10 +38,12 @@ $setupPath = Join-Path $dist 'FluoLab-Setup-1.3.1.exe'
     (Join-Path $root 'src\FluoLab.Core\Models.cs') `
     (Join-Path $root 'src\FluoLab.Core\AscParser.cs') `
     (Join-Path $root 'src\FluoLab.Core\BatchProcessor.cs') `
+    (Join-Path $root 'src\FluoLab.Core\BatchCompleteness.cs') `
     (Join-Path $root 'src\FluoLab.Core\PhAnalysis.cs') `
     (Join-Path $root 'src\FluoLab.Core\PhDemo.cs') `
     (Join-Path $root 'src\FluoLab.Core\WorkflowData.cs') `
     (Join-Path $root 'src\FluoLab.Core\Literature.cs') `
+    (Join-Path $root 'src\FluoLab.Core\LiteratureReview.cs') `
     (Join-Path $root 'src\FluoLab.Core\LocalLiterature.cs') `
     (Join-Path $root 'src\FluoLab.Core\LoopbackAssetServer.cs') `
     (Join-Path $root 'src\FluoLab.Core\ModuleContracts.cs')
@@ -77,6 +80,7 @@ $wpfReferences = @(
     (Join-Path $root 'src\FluoLab.App\Theme.cs') `
     (Join-Path $root 'src\FluoLab.App\WindowPlacement.cs') `
     (Join-Path $root 'src\FluoLab.App\LiteratureWindow.cs') `
+    (Join-Path $root 'src\FluoLab.App\BatchCompletenessWindow.cs') `
     (Join-Path $root 'src\FluoLab.App\LaboratoryModulesWindow.cs') `
     (Join-Path $root 'src\FluoLab.App\SpectrumPlot.cs') `
     (Join-Path $root 'src\FluoLab.App\MainWindow.cs') `
@@ -95,6 +99,7 @@ if ($LASTEXITCODE -ne 0) { throw 'FluoLab.App build failed.' }
     (Join-Path $root 'tests\FluoLab.Tests\Program.cs') `
     (Join-Path $root 'tests\FluoLab.Tests\PhAnalysisTests.cs') `
     (Join-Path $root 'tests\FluoLab.Tests\WorkflowTests.cs') `
+    (Join-Path $root 'tests\FluoLab.Tests\FinalsTests.cs') `
     (Join-Path $root 'tests\FluoLab.Tests\LaboratoryTests.cs')
 if ($LASTEXITCODE -ne 0) { throw 'FluoLab.Tests build failed.' }
 

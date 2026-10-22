@@ -129,8 +129,9 @@ namespace FluoLab.Core
             var root = new Uri(Path.GetDirectoryName(Path.GetFullPath(projectPath)) + Path.DirectorySeparatorChar);
             var relative = root.MakeRelativeUri(new Uri(batch.SourceFolder + Path.DirectorySeparatorChar));
             var sameDrive = string.Equals(Path.GetPathRoot(batch.SourceFolder), Path.GetPathRoot(Path.GetFullPath(projectPath)), StringComparison.OrdinalIgnoreCase);
+            var virtualSynthetic = synthetic && batch.ValidDatasets.Any(dataset => !SourceIdentity.ForDataset(dataset).StartsWith("file-sha256:", StringComparison.Ordinal));
             return new WorkProject { Synthetic = synthetic,
-                SourceFolder = synthetic || !sameDrive || relative.IsAbsoluteUri ? "" : Uri.UnescapeDataString(relative.ToString()),
+                SourceFolder = virtualSynthetic || !sameDrive || relative.IsAbsoluteUri ? "" : Uri.UnescapeDataString(relative.ToString()),
                 WavelengthText = session.Parameters.WavelengthText, IntensityUnit = session.Parameters.IntensityUnit,
                 Samples = session.Samples.Select(x => new WorkProjectSample { FileName = Path.GetFileName(x.SourcePath), Metadata = x.Copy(),
                     Fingerprint = SourceIdentity.ForDataset(batch.ValidDatasets.Single(d => string.Equals(d.SourcePath, x.SourcePath, StringComparison.OrdinalIgnoreCase))) }).ToList() };

@@ -25,3 +25,5 @@ __pycache__/
 *.key
 !examples/synthetic-asc/*.ASC
 
+
+**/node_modules/

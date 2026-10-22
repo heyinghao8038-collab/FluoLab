@@ -121,10 +121,18 @@ namespace FluoLab.Core
             if (new FileInfo(path).Length > 30 * 1024 * 1024) throw new InvalidOperationException("文献处理结果过大。");
             var document = Json().Deserialize<LiteratureDocument>(File.ReadAllText(path, Encoding.UTF8));
             if (document == null || document.Pages == null || document.Pages.Count == 0 || document.Pages.Count > 1000) throw new InvalidOperationException("文献结果无有效页面。");
-            for (var i = 0; i < document.Pages.Count; i++) if (document.Pages[i].Number != i + 1) throw new InvalidOperationException("文献页码不完整，请重新导入。");
+            for (var i = 0; i < document.Pages.Count; i++) if (document.Pages[i] == null || document.Pages[i].Number != i + 1) throw new InvalidOperationException("文献页码不完整，请重新导入。");
+            LiteratureReview.Refresh(document);
             return document;
         }
-        public static void WriteDocument(string path, LiteratureDocument document) { File.WriteAllText(path, Json().Serialize(document), new UTF8Encoding(false)); }
+        public static void WriteDocument(string path, LiteratureDocument document)
+        {
+            var text = Json().Serialize(document);
+            if (Encoding.UTF8.GetByteCount(text) > 30 * 1024 * 1024) throw new InvalidOperationException("文献与修订记录超过 30 MB，请先导出并拆分文献。");
+            var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try { File.WriteAllText(temporary, text, new UTF8Encoding(false)); if (File.Exists(path)) File.Replace(temporary, path, null); else File.Move(temporary, path); }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        }
         private static JavaScriptSerializer Json() { return new JavaScriptSerializer { MaxJsonLength = 30 * 1024 * 1024, RecursionLimit = 100 }; }
         private static string Quote(string value)
         {

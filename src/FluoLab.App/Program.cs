@@ -9,8 +9,8 @@ using System.Windows.Threading;
 using FluoLab.Core;
 using FluoLab.Export;
 
-[assembly: System.Reflection.AssemblyVersion("1.3.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.3.1.0")]
+[assembly: System.Reflection.AssemblyVersion("1.4.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.4.0.0")]
 
 namespace FluoLab.App
 {
@@ -49,7 +49,7 @@ namespace FluoLab.App
                 lifetime.Tick += delegate { application.Shutdown(); }; lifetime.Start();
                 return application.Run();
             }
-            if (args.Length >= 5 && (args[0] == "--literature-screenshot" || args[0] == "--modules-screenshot" || args[0] == "--main-layout-screenshot"))
+            if (args.Length >= 5 && (args[0] == "--literature-screenshot" || args[0] == "--modules-screenshot" || args[0] == "--main-layout-screenshot" || args[0] == "--completeness-screenshot"))
             {
                 Window preview;
                 if (args[0] == "--literature-screenshot")
@@ -57,6 +57,7 @@ namespace FluoLab.App
                     var literature = new LiteratureWindow();
                     literature.LoadFixedDemoForQa(args.Length > 5 ? args[5] : ""); preview = literature;
                 }
+                else if (args[0] == "--completeness-screenshot") preview = BatchCompletenessWindow.FixedState(args.Length > 5 ? args[5] : "ready");
                 else if (args[0] == "--main-layout-screenshot") preview = new MainWindow();
                 else preview = new LaboratoryModulesWindow();
                 RenderModuleScreenshot(preview, args[1], int.Parse(args[2], CultureInfo.InvariantCulture), int.Parse(args[3], CultureInfo.InvariantCulture), double.Parse(args[4], CultureInfo.InvariantCulture));
@@ -99,6 +100,9 @@ namespace FluoLab.App
             if (args[0] == "--ph-demo-export" && (args.Length == 2 || (args.Length == 3 && args[2] == "--overwrite")))
             {
                 var folder = Path.GetFullPath(args[1]); Directory.CreateDirectory(folder);
+                var sourceFolder = Path.Combine(folder, "ASC");
+                if (!Directory.Exists(sourceFolder)) PhDemo.WriteAscFiles(sourceFolder);
+                batch = PhDemo.ReadAscFiles(sourceFolder);
                 var session = PhDemo.CreateConfirmedSession(batch);
                 var result = session.Calculate(CancellationToken.None);
                 var overwrite = args.Length == 3;
@@ -106,10 +110,11 @@ namespace FluoLab.App
                 var chart = new PhResponseChart(result, true);
                 chart.ExportPng(Path.Combine(folder, "Synthetic-pH-response.png"), overwrite);
                 chart.ExportSvg(Path.Combine(folder, "Synthetic-pH-response.svg"), overwrite);
-                var sourceFolder = Path.Combine(folder, "ASC");
-                if (!Directory.Exists(sourceFolder)) PhDemo.WriteAscFiles(sourceFolder);
                 var projectPath = Path.Combine(folder, "Synthetic-pH-work.fluolab");
                 var project = WorkProjectStore.Capture(batch, session, projectPath, true);
+                project.SourceFolder = "ASC/";
+                var restored = WorkProjectStore.Restore(project, batch);
+                if (restored.GroupingConfirmed || restored.HasCurrentResult) throw new InvalidOperationException("模拟工作项目恢复不应保留确认或旧结果。");
                 AtomicOutput.Write(projectPath, overwrite, p => File.WriteAllBytes(p, WorkProjectStore.Serialize(project)));
                 AnalysisBundleExporter.Export(result, batch, Path.Combine(folder, "Synthetic-pH-bundle.zip"), overwrite, false, true,
                     delegate(string png, string svg) { chart.ExportPng(png, false); chart.ExportSvg(svg, false); });
@@ -166,6 +171,7 @@ namespace FluoLab.App
             var visual = (FrameworkElement)window.Content; window.Content = null;
             var frame = new System.Windows.Controls.Border { Background = Theme.BackgroundBrush, Child = visual, Width = width / scale, Height = height / scale };
             frame.Measure(new Size(width / scale, height / scale)); frame.Arrange(new Rect(0, 0, width / scale, height / scale)); frame.UpdateLayout();
+            window.Dispatcher.Invoke(DispatcherPriority.ApplicationIdle, new Action(delegate { })); frame.UpdateLayout();
             var bitmap = new RenderTargetBitmap(width, height, 96 * scale, 96 * scale, PixelFormats.Pbgra32); bitmap.Render(frame);
             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));

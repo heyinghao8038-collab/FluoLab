@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "cages": [
+    {
+      "id": "synthetic-cage",
+      "cageNo": "SIMULATED-001",
+      "createdAt": "2026-10-16",
+      "status": "在养",
+      "notes": "SYNTHETIC, not real animals",
+      "sourceCageIds": [],
+      "groups": [
+        {
+          "id": "group",
+          "birthDate": "2026-10-01",
+          "sex": "雄",
+          "genotype": "WT",
+          "quantity": 3
+        }
+      ]
+    }
+  ],
+  "breedings": [],
+  "logs": []
+}

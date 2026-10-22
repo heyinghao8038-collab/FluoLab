@@ -137,6 +137,25 @@ namespace FluoLab.UiTests
             Check(paper.WindowState == WindowState.Minimized, "minimize action"); paper.WindowState = WindowState.Normal;
             paper.WindowState = WindowState.Maximized; Check(paper.WindowState == WindowState.Maximized, "maximize action");
             paper.WindowState = WindowState.Normal; Check(paper.WindowState == WindowState.Normal, "restore action");
+            var fixedPaper = (Window)Activator.CreateInstance(type);
+            Call(fixedPaper, "LoadFixedDemoForQa", ""); fixedPaper.ShowInTaskbar = false; fixedPaper.Left = -20000; fixedPaper.Show(); Drain(fixedPaper);
+            var fixedDocument = (LiteratureDocument)Field(fixedPaper, "document");
+            var machineText = fixedDocument.Pages[0].ChineseText;
+            ((TextBox)Field(fixedPaper, "reviewDraft")).Text = "模拟手动修改 600 nm";
+            Check(((ComboBox)Field(fixedPaper, "reviewState")).SelectedIndex == 0 && (bool)Field(fixedPaper, "dirty"), "editing review revokes state and protects unsaved content");
+            ((ComboBox)Field(fixedPaper, "reviewState")).SelectedIndex = 1;
+            ((Button)Field(fixedPaper, "saveReview")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Drain(fixedPaper);
+            Check(fixedDocument.Pages[0].ChineseText == machineText && fixedDocument.Pages[0].Review.Draft == "模拟手动修改 600 nm" && fixedDocument.Pages[0].Review.State == LiteratureReviewState.Reviewed, "WPF explicit review save is separate from original machine text");
+            ((TextBox)Field(fixedPaper, "termNotes")).Text = "模拟术语备注";
+            Check(fixedDocument.TermNotes == "模拟术语备注", "terminology notes bind to current document");
+            SetField(fixedPaper, "busy", true); Call(fixedPaper, "SetControls");
+            Check(!((TextBox)Field(fixedPaper, "reviewDraft")).IsEnabled && !((Button)Field(fixedPaper, "saveReview")).IsEnabled, "review disabled during tasks");
+            SetField(fixedPaper, "busy", false); fixedPaper.Close();
+            var summary = (Window)assembly.GetType("FluoLab.App.BatchCompletenessWindow").GetMethod("FixedDemo", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
+            summary.ShowInTaskbar = false; summary.Left = -20000; summary.Show(); Drain(summary);
+            var summaryGrid = (DataGrid)Field(summary, "grid"); var count = summaryGrid.Items.Count;
+            ((TextBox)Field(summary, "search")).Text = "模拟异常文件"; Drain(summary);
+            Check(count > 1 && summaryGrid.Items.Count == 1, "completeness filter limits view only"); summary.Close();
             if (Directory.Exists(component))
             {
                 WaitTask(paper, (System.Threading.Tasks.Task)Call(paper, "ImportPath", Path.Combine(root, "outputs", "v1.3-synthetic-literature", "Synthetic-English-Article.pdf")));
@@ -146,6 +165,14 @@ namespace FluoLab.UiTests
                 document = (LiteratureDocument)Field(paper, "document");
                 Console.WriteLine("INFO: " + ((TextBlock)Field(paper, "status")).Text);
                 Check(document.Pages.All(x => !string.IsNullOrWhiteSpace(x.ChineseText)), "actual offline translation of both pages");
+                var originalMachine = document.Pages[0].ChineseText;
+                ((TextBox)Field(paper, "reviewDraft")).Text = "【模拟核对稿，非真实论文】" + originalMachine;
+                ((ComboBox)Field(paper, "reviewState")).SelectedIndex = 2;
+                ((Button)Field(paper, "saveReview")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                ((TextBox)Field(paper, "termNotes")).Text = "【模拟备注】fluorescence → 荧光（需人工核对语境）";
+                WaitTask(paper, (System.Threading.Tasks.Task)Call(paper, "TranslatePages", false));
+                document = (LiteratureDocument)Field(paper, "document");
+                Check(document.Pages[0].ChineseText == originalMachine && document.Pages[0].Review.Draft.StartsWith("【模拟核对稿", StringComparison.Ordinal) && document.Pages[0].Review.State == LiteratureReviewState.Questionable && document.TermNotes.Contains("fluorescence"), "actual worker checkpoint preserves review, history and terms without changing original machine text");
                 var output = Path.Combine(root, "outputs", "v1.3-synthetic-literature");
                 File.WriteAllText(Path.Combine(output, "Synthetic-Bilingual.html"), LiteratureReport.Html(document), new System.Text.UTF8Encoding(true));
                 File.WriteAllText(Path.Combine(output, "Synthetic-Bilingual.txt"), LiteratureReport.Text(document), new System.Text.UTF8Encoding(true));

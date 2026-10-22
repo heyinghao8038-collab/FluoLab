@@ -1,4 +1,14 @@
-# FluoLab 荧光数据分析器 — 产品需求文档
+﻿# FluoLab 荧光数据分析器 — 产品需求文档
+
+## Version 1.4: Finals Readiness — 2026-10-22
+
+Prioritize verifiable laboratory workflow improvements over new scientific methods. Add a read-only batch completeness view (file status, point count, numeric wavelength union/intersection and per-file missing coverage). It must not label negative intensities as bad, infer instrument quality, exclude files, or change the two-sheet raw export.
+
+Add page-linked human review to offline literature reading: retain extracted source and original machine output, edit a separate human draft, record explicit unreviewed/reviewed/questionable status with timestamped revision history, and keep document-level terminology notes. Notes are manual reference material, not model constraints or automatic substitutions. Review applies to one exact machine-output fingerprint; retranslating changed output revokes confirmation while retaining the earlier draft/history for comparison. Page references are exact; automatic paragraph alignment is not claimed. Export all provenance and review information in escaped HTML/TXT. Drafts remain session-local; export before closing. No new model, OCR, cloud, inference endpoint or medical accuracy claim.
+
+Engineering deliverables: reproducible mouse frontend package manifest/lock, Windows CI for existing compiler and synthetic tests, versioned portable/installer/demo artifacts and SHA-256 manifest, clear installation and trial instructions. Publish only reviewed synthetic/public source and release files through the isolated publication tree. Preserve real reference fixtures locally. Human trials and other-PC/physical-DPI compatibility remain pending until actually performed.
+
+Acceptance: core completeness edge cases; review separation/history/changed-output invalidation/legacy JSON/report escaping; unchanged scientific, real-78 and synthetic-100 regressions; fixed-data UI screenshots before runtime integration; review/extraction UI control tests; release archive and installer checks. CI and remote release availability are accepted only after external verification, not from local file existence.
 
 ## Public Source Publication — 2026-10-19
 
@@ -125,7 +135,7 @@ Out of scope: pKa, calibration, detection limits, significance tests, automatic 
 ## 5. 完成标准
 
 - 真实 78 文件全部成功，均为 3,101 点、490.0–800.0 nm，导出为 3,102 行 × 79 列。
-- Private reference measurements remain in local acceptance fixtures and are deliberately excluded from this public source snapshot.
+- Reference endpoint assertions remain in the private local acceptance suite; public validation uses synthetic observations.
 - 100 份 × 3,101 点的代表性批次解析期间 UI 可操作、进度可见，目标在典型电脑五秒内完成。
 - 不同波长范围和缺点数据正确按并集对齐。
 - 缺少 `#DATA`、非数值、重复波长、空目录、取消保存、中文路径、长文件名和被占用文件均有明确结果。
