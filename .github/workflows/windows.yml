@@ -2,6 +2,7 @@ name: Windows build and synthetic tests
 on:
   push:
     branches: [main]
+    tags: [v1.4.0]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -45,3 +46,27 @@ jobs:
       - name: Strict TypeScript and frontend build
         working-directory: Modules/Mouse
         run: npm run build
+  release:
+    if: github.ref == 'refs/tags/v1.4.0'
+    needs: [framework, mouse-source]
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build verified release packages
+        shell: powershell
+        run: |
+          .\build.ps1
+          .\scripts\Prepare-FinalsDemo.ps1
+          .\scripts\Package-Release.ps1
+      - name: Publish tagged public release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.4.0 dist/FluoLab-Setup-1.4.0.exe dist/FluoLab-Portable-1.4.0.zip dist/FluoLab-Synthetic-Demo-1.4.0.zip dist/FluoLab-1.4.0-SHA256.txt --verify-tag --title "FluoLab 1.4.0" --notes-file docs/Release-1.4.0.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }
