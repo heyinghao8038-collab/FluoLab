@@ -1,5 +1,9 @@
 ﻿# FluoLab 荧光数据分析器 — 产品需求文档
 
+## Version 1.4.2 Release Correction — 2026-10-22
+
+The initial 1.4.1 tag failed hosted UI verification because the offscreen test inherited the runner monitor's size cap. Keep that tag as a failure record and publish 1.4.2 instead, after explicit logical viewport tests and all remote jobs pass. This is a test portability/version correction, not a scientific or feature expansion. Do not remove assertions or modify runtime window-fitting behavior to satisfy CI.
+
 ## Version 1.4.1 Public Release — 2026-10-22
 
 The owner now requests a GitHub update. Publish the reviewed 1.4.1 source from the isolated publication tree and create a new immutable version tag/release, preserving 1.4.0. Include CI-built installer, portable ZIP, synthetic demo and checksums. Exclude private data, reference assertions, local paths and memory. The existing optional CPU component remains compatible and separately distributed; do not imply that the main installer includes it. Acceptance requires public source, successful remote checks and anonymously accessible release assets, not merely a local push.

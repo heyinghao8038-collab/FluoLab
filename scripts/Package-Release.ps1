@@ -1,4 +1,4 @@
-﻿param([string]$DistributionDirectory = '', [string]$DemoDirectory = '', [string]$OptionalComponent = '', [string]$Version = '1.4.1')
+﻿param([string]$DistributionDirectory = '', [string]$DemoDirectory = '', [string]$OptionalComponent = '', [string]$Version = '1.4.2')
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)

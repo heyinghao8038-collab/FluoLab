@@ -28,7 +28,7 @@ namespace FluoLab.App
         private void UpdateDashboardLayout()
         {
             if (dashboardColumn == null) return;
-            var expanded = ActualWidth >= 1200 && dashboardExpanded;
+            var expanded = DashboardViewportWidth() >= 1200 && dashboardExpanded;
             dashboardColumn.Width = new GridLength(expanded ? 292 : 0);
             dashboard.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
             if (expanded && dashboardWindow != null) dashboardWindow.Close();
@@ -36,13 +36,18 @@ namespace FluoLab.App
         }
         private void ToggleDashboard()
         {
-            if (ActualWidth >= 1200) { dashboardExpanded = !dashboardExpanded; UpdateDashboardLayout(); return; }
+            if (DashboardViewportWidth() >= 1200) { dashboardExpanded = !dashboardExpanded; UpdateDashboardLayout(); return; }
             if (dashboardWindow != null) { dashboardWindow.Activate(); return; }
             detachedDashboard = CreateDashboardView();
             if (dashboard.Report != null) detachedDashboard.Present(dashboard.Report, SelectedPreviewCount());
             else detachedDashboard.ShowStatus(dashboardBusy || isLoading ? "正在处理…" : "暂无统计", dashboardBusy || isLoading ? "请等待当前批次汇总完成。" : "导入 ASC 后自动汇总本批文件。", dashboardBusy || isLoading);
             dashboardWindow = new Window { Title = "FluoLab 本批数据概况", Width = 350, Height = 730, MinWidth = 310, MinHeight = 420, Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = detachedDashboard, Padding = new Thickness(10) };
             dashboardWindow.Closed += delegate { dashboardWindow = null; detachedDashboard = null; }; dashboardWindow.Show();
+        }
+        private double DashboardViewportWidth()
+        {
+            var viewport = Content as FrameworkElement;
+            return viewport == null ? ActualWidth : viewport.ActualWidth;
         }
         private int SelectedPreviewCount() { return fileRows.Count(row => row.CheckBox.IsChecked == true && row.Result.Dataset != null); }
         private void HideDashboardForImport()

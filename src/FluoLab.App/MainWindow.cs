@@ -69,7 +69,7 @@ namespace FluoLab.App
 
         public MainWindow()
         {
-            Title = "FluoLab 荧光数据分析器 · 1.4.1";
+            Title = "FluoLab 荧光数据分析器 · 1.4.2";
             Width = 1440;
             Height = 900;
             MinWidth = 800;

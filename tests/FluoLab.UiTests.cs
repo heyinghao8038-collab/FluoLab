@@ -162,12 +162,14 @@ namespace FluoLab.UiTests
         }
         private static void LayoutDashboardViewport(Window window, double width)
         {
-            // Hosted desktops may cap HWND startup size; test explicit WPF layout rather than monitor dimensions.
+            // Hosted desktops cap HWND sizes; the content viewport remains independently testable offscreen.
             window.Width = width; Drain(window);
-            window.Measure(new Size(width, window.Height));
-            window.Arrange(new Rect(0, 0, width, window.Height));
+            var viewport = (FrameworkElement)window.Content;
+            viewport.Width = width;
+            viewport.Measure(new Size(width, window.Height));
+            viewport.Arrange(new Rect(0, 0, width, window.Height));
             Call(window, "UpdateDashboardLayout");
-            Check(Math.Abs(window.ActualWidth - width) < 0.5, "dashboard test uses the requested logical viewport");
+            Check(Math.Abs(viewport.ActualWidth - width) < 0.5, "dashboard test uses the requested logical viewport");
         }
         private static void RunModuleChecks(Assembly assembly)
         {

@@ -9,8 +9,8 @@ using System.Windows.Threading;
 using FluoLab.Core;
 using FluoLab.Export;
 
-[assembly: System.Reflection.AssemblyVersion("1.4.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.4.1.0")]
+[assembly: System.Reflection.AssemblyVersion("1.4.2.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.4.2.0")]
 
 namespace FluoLab.App
 {

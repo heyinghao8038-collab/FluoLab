@@ -1,6 +1,6 @@
 # FluoLab
 
-Public source: <https://github.com/heyinghao8038-collab/FluoLab>. Version 1.4.1 adds the current-batch dashboard. Download published installers and demo packages from <https://github.com/heyinghao8038-collab/FluoLab/releases>. Publication uses a separate reviewed tree and excludes real laboratory data, personal memory/paths, generated binaries and optional runtime/model archives. See `docs/Source-Publication.md`.
+Public source: <https://github.com/heyinghao8038-collab/FluoLab>. Version 1.4.2 adds the current-batch dashboard. Download published installers and demo packages from <https://github.com/heyinghao8038-collab/FluoLab/releases>. Publication uses a separate reviewed tree and excludes real laboratory data, personal memory/paths, generated binaries and optional runtime/model archives. See `docs/Source-Publication.md`.
 
 Local-only Windows fluorescence-spectrum organization and traceable pH descriptive analysis. The user interface and analysis reports are Chinese. Built for Windows 10/11 x64 with the inbox .NET Framework 4.8, WPF and C# compiler. No Office automation, cloud service, telemetry or production package restore.
 
@@ -14,11 +14,11 @@ Run in Windows PowerShell from the project root:
 .\artifacts\build\FluoLab.UiTests.exe
 ```
 
-Distribution: `dist/FluoLab/FluoLab.exe` (keep sibling DLLs and Modules) and the per-user `dist/FluoLab-Setup-1.4.1.exe` installer. Use `build.ps1 -DistributionDirectory <folder>` when an existing portable instance is running. The private workspace keeps local builds separately under `dist/v1.4.1`. See the Chinese operating guide for scientific rules, work projects and export bundles.
+Distribution: `dist/FluoLab/FluoLab.exe` (keep sibling DLLs and Modules) and the per-user `dist/FluoLab-Setup-1.4.2.exe` installer. Use `build.ps1 -DistributionDirectory <folder>` when an existing portable instance is running. The private workspace keeps local builds separately under `dist/v1.4.2`. See the Chinese operating guide for scientific rules, work projects and export bundles.
 
 ## Version 1.4
 
-Version 1.4.1 adds a collapsible current-batch sidebar beside the raw chart: discovered/valid/failed counts, failure categories, measured-point totals and exact wavelength coverage. It deliberately has no success rate or quality score. Preview/search only change the preview, never batch totals or export scope. At narrow widths the same overview opens in a movable owned window. Loading clears old summaries; revision guards prevent stale worker results. The original raw XLSX and scientific calculations are unchanged. Version 1.4.0 downloads remain available separately.
+Version 1.4.2 adds a collapsible current-batch sidebar beside the raw chart: discovered/valid/failed counts, failure categories, measured-point totals and exact wavelength coverage. It deliberately has no success rate or quality score. Preview/search only change the preview, never batch totals or export scope. At narrow widths the same overview opens in a movable owned window. Loading clears old summaries; revision guards prevent stale worker results. The original raw XLSX and scientific calculations are unchanged. Version 1.4.0 downloads remain available separately.
 
 Read-only batch completeness summarizes exact measured-point coverage without changing raw data, inclusion or workbook contracts. Offline literature review keeps machine output separate from the human draft, records explicit review states and revision history, revokes review after changed machine output, and exports page-linked audit reports with manual terminology notes. It does not automatically align paragraphs or replace terms. Reading drafts are session-local until HTML/TXT export. Generic model output is not validated scientific translation.
 

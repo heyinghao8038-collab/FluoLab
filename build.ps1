@@ -29,7 +29,7 @@ $exportPath = Join-Path $build 'FluoLab.Export.dll'
 $cliPath = Join-Path $build 'FluoLab.Cli.exe'
 $appPath = Join-Path $build 'FluoLab.exe'
 $testsPath = Join-Path $build 'FluoLab.Tests.exe'
-$setupPath = Join-Path $dist 'FluoLab-Setup-1.4.1.exe'
+$setupPath = Join-Path $dist 'FluoLab-Setup-1.4.2.exe'
 
 & $csc @common /target:library "/out:$corePath" `
     "/reference:$(Join-Path $framework 'System.Web.Extensions.dll')" `

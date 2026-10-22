@@ -1,5 +1,9 @@
 # FluoLab Technical Specification
 
+## Version 1.4.2 Hosted Verification Correction
+
+Dashboard layout uses actual content width, excluding native window borders. UI tests explicitly measure and arrange that offscreen WPF content at the requested logical viewport before responsive assertions; HWND monitor caps are independent. Actual viewport size is asserted; wide/narrow/collapse tests remain mandatory. Preserve runtime fitting to physical work area. Capture native test stderr and publish safe failure annotations on CI. Bump release metadata to 1.4.2 and retain the failed 1.4.1 tag without rewriting history. Verify the new tag's CI and download checksums before delivery.
+
 ## Version 1.4.1 Publication Tasks — 2026-10-22
 
 Update the existing exact-tag CI release path to v1.4.1, with minimal workflow edits and the existing read/write job permissions. Run the allowlist sanitizer, review the isolated Git diff and production-source parity, build/test/package that copy, then push main and the new tag without force. Poll anonymous GitHub Actions and release APIs; inspect asset names and sizes. Keep previous release and private workspace untouched. Public acceptance documentation must not disclose reference sample values, source paths or private cleaning-example identities.

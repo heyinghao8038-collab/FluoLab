@@ -2,7 +2,7 @@ name: Windows build and synthetic tests
 on:
   push:
     branches: [main]
-    tags: [v1.4.1]
+    tags: [v1.4.2]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -54,7 +54,7 @@ jobs:
         working-directory: Modules/Mouse
         run: npm run build
   release:
-    if: github.ref == 'refs/tags/v1.4.1'
+    if: github.ref == 'refs/tags/v1.4.2'
     needs: [framework, mouse-source]
     runs-on: windows-latest
     timeout-minutes: 15
@@ -75,5 +75,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v1.4.1 dist/FluoLab-Setup-1.4.1.exe dist/FluoLab-Portable-1.4.1.zip dist/FluoLab-Synthetic-Demo-1.4.1.zip dist/FluoLab-1.4.1-SHA256.txt --verify-tag --title "FluoLab 1.4.1" --notes-file docs/Release-1.4.1.txt
+          gh release create v1.4.2 dist/FluoLab-Setup-1.4.2.exe dist/FluoLab-Portable-1.4.2.zip dist/FluoLab-Synthetic-Demo-1.4.2.zip dist/FluoLab-1.4.2-SHA256.txt --verify-tag --title "FluoLab 1.4.2" --notes-file docs/Release-1.4.2.txt
           if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }
