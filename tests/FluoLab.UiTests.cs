@@ -126,6 +126,7 @@ namespace FluoLab.UiTests
             var batch = new SpectrumBatch(source.SourceFolder, DateTimeOffset.Now, source.Files.Concat(new[] { FileProcessingResult.Failed(Path.Combine(source.SourceFolder, "模拟格式错误.ASC"), "第 3 行不是两列数值。") }).ToArray());
             Call(main, "ApplyBatch", batch, TimeSpan.Zero);
             WaitTask(main, (System.Threading.Tasks.Task)Call(main, "RefreshDashboardAsync", batch));
+            LayoutDashboardViewport(main, 1440);
             var dashboard = Field(main, "dashboard");
             var property = dashboard.GetType().GetProperty("Report", BindingFlags.Instance | BindingFlags.NonPublic);
             var report = (BatchCompletenessReport)property.GetValue(dashboard, null);
@@ -140,7 +141,7 @@ namespace FluoLab.UiTests
             var log = main.OwnedWindows.Cast<Window>().Single(window => window.Title == "处理日志");
             var textContent = Find<TextBox>(log).Single().Text;
             Check(textContent.Contains("模拟解析失败.ASC") && !textContent.Contains("模拟格式错误.ASC"), "failure category opens exact filtered filename/reason details"); log.Close();
-            main.Width = 900; Drain(main); Call(main, "UpdateDashboardLayout");
+            LayoutDashboardViewport(main, 900);
             Check(((ColumnDefinition)Field(main, "dashboardColumn")).Width.Value == 0, "narrow window preserves chart width");
             ((Button)Field(main, "dashboardToggle")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Drain(main);
             Check(((Window)Field(main, "dashboardWindow")).IsVisible, "narrow overview opens movable owned window");
@@ -152,12 +153,21 @@ namespace FluoLab.UiTests
             WaitTask(main, oldTask); WaitTask(main, (System.Threading.Tasks.Task)Call(main, "RefreshDashboardAsync", empty));
             report = (BatchCompletenessReport)property.GetValue(dashboard, null);
             Check(report.Files.Length == 0 && report.TotalMeasurementCount == 0 && !report.CoverageConsistent, "stale worker cannot overwrite replacement/empty batch");
-            main.Width = 1440; Drain(main); Call(main, "UpdateDashboardLayout");
+            LayoutDashboardViewport(main, 1440);
             ((Button)Field(main, "dashboardToggle")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(((FrameworkElement)dashboard).Visibility == Visibility.Collapsed, "wide overview can collapse");
             ((Button)Field(main, "dashboardToggle")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(((FrameworkElement)dashboard).Visibility == Visibility.Visible, "wide overview can expand again"); main.Close();
             Console.WriteLine("PASS: batch dashboard totals, independent preview/search, filtered failure drilldown, responsive/collapse and stale worker guards.");
+        }
+        private static void LayoutDashboardViewport(Window window, double width)
+        {
+            // Hosted desktops may cap HWND startup size; test explicit WPF layout rather than monitor dimensions.
+            window.Width = width; Drain(window);
+            window.Measure(new Size(width, window.Height));
+            window.Arrange(new Rect(0, 0, width, window.Height));
+            Call(window, "UpdateDashboardLayout");
+            Check(Math.Abs(window.ActualWidth - width) < 0.5, "dashboard test uses the requested logical viewport");
         }
         private static void RunModuleChecks(Assembly assembly)
         {
