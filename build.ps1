@@ -29,7 +29,7 @@ $exportPath = Join-Path $build 'FluoLab.Export.dll'
 $cliPath = Join-Path $build 'FluoLab.Cli.exe'
 $appPath = Join-Path $build 'FluoLab.exe'
 $testsPath = Join-Path $build 'FluoLab.Tests.exe'
-$setupPath = Join-Path $dist 'FluoLab-Setup-1.4.0.exe'
+$setupPath = Join-Path $dist 'FluoLab-Setup-1.4.1.exe'
 
 & $csc @common /target:library "/out:$corePath" `
     "/reference:$(Join-Path $framework 'System.Web.Extensions.dll')" `
@@ -81,6 +81,8 @@ $wpfReferences = @(
     (Join-Path $root 'src\FluoLab.App\WindowPlacement.cs') `
     (Join-Path $root 'src\FluoLab.App\LiteratureWindow.cs') `
     (Join-Path $root 'src\FluoLab.App\BatchCompletenessWindow.cs') `
+    (Join-Path $root 'src\FluoLab.App\BatchDashboard.cs') `
+    (Join-Path $root 'src\FluoLab.App\BatchDashboardUi.cs') `
     (Join-Path $root 'src\FluoLab.App\LaboratoryModulesWindow.cs') `
     (Join-Path $root 'src\FluoLab.App\SpectrumPlot.cs') `
     (Join-Path $root 'src\FluoLab.App\MainWindow.cs') `

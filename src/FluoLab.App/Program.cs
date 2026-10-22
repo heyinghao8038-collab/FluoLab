@@ -9,8 +9,8 @@ using System.Windows.Threading;
 using FluoLab.Core;
 using FluoLab.Export;
 
-[assembly: System.Reflection.AssemblyVersion("1.4.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.4.0.0")]
+[assembly: System.Reflection.AssemblyVersion("1.4.1.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.4.1.0")]
 
 namespace FluoLab.App
 {
@@ -49,7 +49,7 @@ namespace FluoLab.App
                 lifetime.Tick += delegate { application.Shutdown(); }; lifetime.Start();
                 return application.Run();
             }
-            if (args.Length >= 5 && (args[0] == "--literature-screenshot" || args[0] == "--modules-screenshot" || args[0] == "--main-layout-screenshot" || args[0] == "--completeness-screenshot"))
+            if (args.Length >= 5 && (args[0] == "--literature-screenshot" || args[0] == "--modules-screenshot" || args[0] == "--main-layout-screenshot" || args[0] == "--completeness-screenshot" || args[0] == "--dashboard-screenshot"))
             {
                 Window preview;
                 if (args[0] == "--literature-screenshot")
@@ -59,6 +59,7 @@ namespace FluoLab.App
                 }
                 else if (args[0] == "--completeness-screenshot") preview = BatchCompletenessWindow.FixedState(args.Length > 5 ? args[5] : "ready");
                 else if (args[0] == "--main-layout-screenshot") preview = new MainWindow();
+                else if (args[0] == "--dashboard-screenshot") { var main = new MainWindow(); main.LoadDashboardDemoForQa(args.Length > 5 ? args[5] : "ready"); preview = main; }
                 else preview = new LaboratoryModulesWindow();
                 RenderModuleScreenshot(preview, args[1], int.Parse(args[2], CultureInfo.InvariantCulture), int.Parse(args[3], CultureInfo.InvariantCulture), double.Parse(args[4], CultureInfo.InvariantCulture));
                 preview.Close(); application.Shutdown(); return 0;

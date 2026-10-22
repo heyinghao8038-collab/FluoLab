@@ -12,6 +12,7 @@ namespace FluoLab.Core
         public string FileName { get; internal set; }
         public string Status { get; internal set; }
         public string Reason { get; internal set; }
+        public string FailureCategory { get; internal set; }
         public int? PointCount { get; internal set; }
         public double? Minimum { get; internal set; }
         public double? Maximum { get; internal set; }
@@ -23,6 +24,8 @@ namespace FluoLab.Core
         public string BatchName { get; internal set; }
         public DateTimeOffset CreatedAt { get; internal set; }
         public int ValidCount { get; internal set; }
+        public long TotalMeasurementCount { get; internal set; }
+        public bool CoverageConsistent { get; internal set; }
         public double[] Union { get; internal set; }
         public double[] Intersection { get; internal set; }
         public BatchCompletenessRow[] Files { get; internal set; }
@@ -52,6 +55,7 @@ namespace FluoLab.Core
                 var valid = file.Status == ProcessingStatus.Success && dataset != null;
                 rows.Add(new BatchCompletenessRow {
                     FileName = file.FileName, Status = valid ? "有效" : "解析失败", Reason = valid ? "" : file.ErrorMessage,
+                    FailureCategory = valid ? "" : ClassifyFailure(file.ErrorMessage),
                     PointCount = valid ? (int?)dataset.PointCount : null,
                     Minimum = valid ? (double?)dataset.Wavelengths[0] : null,
                     Maximum = valid ? (double?)dataset.Wavelengths[dataset.PointCount - 1] : null,
@@ -61,6 +65,8 @@ namespace FluoLab.Core
             return new BatchCompletenessReport {
                 BatchName = System.IO.Path.GetFileName(batch.SourceFolder.TrimEnd(System.IO.Path.DirectorySeparatorChar)),
                 CreatedAt = DateTimeOffset.Now, ValidCount = batch.ValidDatasets.Length,
+                TotalMeasurementCount = batch.ValidDatasets.Sum(dataset => (long)dataset.PointCount),
+                CoverageConsistent = intersection != null && union.Count == intersection.Count,
                 Union = union.ToArray(), Intersection = intersection == null ? new double[0] : intersection.OrderBy(x => x).ToArray(), Files = rows.ToArray()
             };
         }
@@ -77,5 +83,15 @@ namespace FluoLab.Core
             return text.ToString();
         }
         private static string Number(double? value) { return value.HasValue ? value.Value.ToString("R", CultureInfo.InvariantCulture) : "不可用"; }
+        public static string ClassifyFailure(string reason)
+        {
+            reason = reason ?? "";
+            if ((reason.Contains("未找到") || reason.Contains("缺少")) && reason.Contains("#DATA")) return "缺少 #DATA";
+            if (reason.Contains("没有可用数据")) return "空数据";
+            if (reason.Contains("重复波长")) return "重复波长";
+            if (reason.Contains("数值") || reason.Contains("两列")) return "数据行格式错误";
+            if (reason.Contains("占用") || reason.Contains("权限") || reason.Contains("不存在") || reason.Contains("读取失败")) return "文件无法读取";
+            return "其他解析失败";
+        }
     }
 }

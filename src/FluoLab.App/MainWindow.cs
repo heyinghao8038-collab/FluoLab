@@ -69,7 +69,7 @@ namespace FluoLab.App
 
         public MainWindow()
         {
-            Title = "FluoLab 荧光数据分析器 · 1.4.0";
+            Title = "FluoLab 荧光数据分析器 · 1.4.1";
             Width = 1440;
             Height = 900;
             MinWidth = 800;
@@ -79,6 +79,9 @@ namespace FluoLab.App
             AllowDrop = false;
             TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
             Content = BuildLayout();
+            SizeChanged += delegate { UpdateDashboardLayout(); };
+            Loaded += delegate { UpdateDashboardLayout(); };
+            Closed += delegate { dashboardClosed = true; if (dashboardCancellation != null) dashboardCancellation.Cancel(); };
             Closing += async delegate(object sender, System.ComponentModel.CancelEventArgs args)
             {
                 foreach (var modules in OwnedWindows.OfType<LaboratoryModulesWindow>().ToArray())
@@ -514,13 +517,18 @@ namespace FluoLab.App
                 ToolTip = "也可双击图表恢复"
             };
             reset.Click += delegate { plot.ResetView(); };
-            Grid.SetColumn(reset, 1);
-            toolbar.Children.Add(reset);
+            dashboardToggle = new Button { Content = "数据概况", Style = (Style)FindResource("QuietButton"), ToolTip = "查看本批全部 ASC 概况；小屏打开可移动概况窗" };
+            dashboardToggle.Click += delegate { ToggleDashboard(); };
+            var plotActions = new StackPanel { Orientation = Orientation.Horizontal }; plotActions.Children.Add(dashboardToggle); plotActions.Children.Add(reset);
+            Grid.SetColumn(plotActions, 1);
+            toolbar.Children.Add(plotActions);
             root.Children.Add(toolbar);
 
             plot = new SpectrumPlot { Margin = new Thickness(8, 0, 8, 8) };
-            Grid.SetRow(plot, 1);
-            root.Children.Add(plot);
+            var chartBody = new Grid(); chartBody.ColumnDefinitions.Add(new ColumnDefinition());
+            dashboardColumn = new ColumnDefinition { Width = new GridLength(292) }; chartBody.ColumnDefinitions.Add(dashboardColumn);
+            chartBody.Children.Add(plot); dashboard = CreateDashboardView(); dashboard.Margin = new Thickness(0, 0, 12, 12); Grid.SetColumn(dashboard, 1); chartBody.Children.Add(dashboard);
+            Grid.SetRow(chartBody, 1); root.Children.Add(chartBody);
             return CreateCard(root, new Thickness(0, 0, 0, 0));
         }
 
@@ -566,7 +574,8 @@ namespace FluoLab.App
                 if (currentBatch == null || isLoading) return;
                 var snapshot = currentBatch; completenessButton.IsEnabled = false; SetStatus("正在检查波长覆盖，不改变原始数据…", Theme.AccentBrush);
                 try {
-                    var report = await Task.Run(delegate { return BatchCompleteness.Create(snapshot, CancellationToken.None); });
+                    var cached = ReferenceEquals(dashboardReportBatch, snapshot) ? dashboard.Report : null;
+                    var report = cached ?? await Task.Run(delegate { return BatchCompleteness.Create(snapshot, CancellationToken.None); });
                     if (!ReferenceEquals(currentBatch, snapshot) || isLoading || !IsVisible) return;
                     new BatchCompletenessWindow(report) { Owner = this }.Show(); SetStatus("完整性检查完成；未改变预览、分析参与状态或导出范围。", Theme.SuccessBrush);
                 }
@@ -782,11 +791,16 @@ namespace FluoLab.App
             progressText.Visibility = loading ? Visibility.Visible : Visibility.Collapsed;
             if (loading)
             {
+                HideDashboardForImport();
                 folderPathText.Text = folderPath;
                 importSummaryText.Text = "正在后台解析，界面仍可操作";
                 progressText.Text = "正在查找 ASC 文件…";
                 importProgress.Value = 0;
                 SetStatus("正在导入数据…", Theme.AccentBrush);
+            }
+            else if (!dashboardBusy && dashboard.Report == null) {
+                if (currentBatch != null) RefreshDashboard();
+                else dashboard.ShowStatus("尚未导入 ASC", "选择或拖入文件夹后，自动汇总文件状态和波长覆盖。", false);
             }
         }
 
@@ -794,6 +808,9 @@ namespace FluoLab.App
         {
             if (phWindow != null) { phWindow.Close(); if (phWindow != null && phWindow.IsVisible) return; }
             currentBatch = batch;
+            if (dashboardWindow != null) dashboardWindow.Close();
+            foreach (var log in OwnedWindows.Cast<Window>().Where(window => window.Title == "处理日志").ToArray()) log.Close();
+            RefreshDashboard();
             foreach (var summary in OwnedWindows.OfType<BatchCompletenessWindow>().ToArray()) summary.Close();
             completenessButton.IsEnabled = true;
             phButton.IsEnabled = batch.SuccessCount > 0;
@@ -825,10 +842,10 @@ namespace FluoLab.App
             ApplySearchFilter();
             ApplySelectedSeries();
             SetStatus(
-                batch.SkippedCount == 0
+                batch.DiscoveredCount == 0 ? "当前文件夹未发现 ASC，请确认选择了实际存放数据的内层文件夹。" : batch.SkippedCount == 0
                     ? string.Format("导入完成：{0} 份文件全部有效", batch.SuccessCount)
                     : string.Format("导入完成：{0} 份有效，{1} 份已跳过", batch.SuccessCount, batch.SkippedCount),
-                batch.SkippedCount == 0 ? Theme.SuccessBrush : Theme.WarningBrush);
+                batch.DiscoveredCount == 0 ? Theme.SecondaryTextBrush : batch.SkippedCount == 0 ? Theme.SuccessBrush : Theme.WarningBrush);
         }
 
         private static string BuildImportSummary(SpectrumBatch batch, TimeSpan elapsed, bool includeElapsed)
@@ -960,6 +977,8 @@ namespace FluoLab.App
                 .Select(row => new PlotSeries(row.Result.Dataset, row.Color))
                 .ToArray();
             plot.SetSeries(selected);
+            if (dashboard.Report != null) dashboard.SetPreviewCount(selected.Length);
+            if (detachedDashboard != null && detachedDashboard.Report != null) detachedDashboard.SetPreviewCount(selected.Length);
             plotSummaryText.Text = selected.Length == 0
                 ? "尚未选择曲线"
                 : string.Format("已显示 {0} 条", selected.Length);
@@ -1083,7 +1102,7 @@ namespace FluoLab.App
                 DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture));
         }
 
-        private void ShowProcessingLog()
+        private void ShowProcessingLog(string category = null)
         {
             if (currentBatch == null)
             {
@@ -1102,7 +1121,8 @@ namespace FluoLab.App
             builder.AppendLine();
             builder.AppendLine();
 
-            foreach (var result in currentBatch.Files.Where(file => file.Status == ProcessingStatus.Failed))
+            if (category != null) { builder.AppendLine("原因分类：" + category); builder.AppendLine(); }
+            foreach (var result in currentBatch.Files.Where(file => file.Status == ProcessingStatus.Failed && (category == null || BatchCompleteness.ClassifyFailure(file.ErrorMessage) == category)))
             {
                 builder.AppendLine("• " + result.FileName);
                 builder.AppendLine("  " + result.ErrorMessage);

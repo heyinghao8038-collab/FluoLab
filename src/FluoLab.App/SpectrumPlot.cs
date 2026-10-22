@@ -277,19 +277,20 @@ namespace FluoLab.App
             gridPen.Freeze();
             axisPen.Freeze();
 
+            var ySteps = Math.Max(1, Math.Min(5, (int)(plotArea.Height / 28)));
             for (var step = 0; step <= 5; step++)
             {
                 var x = plotArea.Left + plotArea.Width * step / 5.0;
-                var y = plotArea.Top + plotArea.Height * step / 5.0;
+                var y = plotArea.Top + plotArea.Height * step / ySteps;
                 drawingContext.DrawLine(gridPen, new Point(x, plotArea.Top), new Point(x, plotArea.Bottom));
-                drawingContext.DrawLine(gridPen, new Point(plotArea.Left, y), new Point(plotArea.Right, y));
+                if (step <= ySteps) drawingContext.DrawLine(gridPen, new Point(plotArea.Left, y), new Point(plotArea.Right, y));
 
                 var xValue = viewMinX + (viewMaxX - viewMinX) * step / 5.0;
-                var yValue = viewMaxY - (viewMaxY - viewMinY) * step / 5.0;
+                var yValue = viewMaxY - (viewMaxY - viewMinY) * step / ySteps;
                 var xLabel = CreateText(FormatAxisValue(xValue), 10, FontWeights.Normal, Theme.SecondaryTextBrush);
                 var yLabel = CreateText(FormatAxisValue(yValue), 10, FontWeights.Normal, Theme.SecondaryTextBrush);
                 drawingContext.DrawText(xLabel, new Point(x - xLabel.Width / 2, plotArea.Bottom + 7));
-                drawingContext.DrawText(yLabel, new Point(plotArea.Left - yLabel.Width - 9, y - yLabel.Height / 2));
+                if (step <= ySteps) drawingContext.DrawText(yLabel, new Point(plotArea.Left - yLabel.Width - 9, y - yLabel.Height / 2));
             }
 
             drawingContext.DrawRectangle(null, axisPen, plotArea);
@@ -402,9 +403,9 @@ namespace FluoLab.App
 
         private void DrawAxisTitles(DrawingContext drawingContext)
         {
-            var xTitle = CreateText("Wavelength (nm)", 11, FontWeights.SemiBold, Theme.SecondaryTextBrush);
+            var xTitle = CreateText("波长 (nm)", 11, FontWeights.SemiBold, Theme.SecondaryTextBrush);
             drawingContext.DrawText(xTitle, new Point(plotArea.Left + (plotArea.Width - xTitle.Width) / 2, ActualHeight - 18));
-            var yTitle = CreateText("Fluorescence intensity", 11, FontWeights.SemiBold, Theme.SecondaryTextBrush);
+            var yTitle = CreateText("荧光强度", 11, FontWeights.SemiBold, Theme.SecondaryTextBrush);
             drawingContext.PushTransform(new RotateTransform(-90));
             drawingContext.DrawText(yTitle, new Point(-(plotArea.Top + (plotArea.Height + yTitle.Width) / 2), 8));
             drawingContext.Pop();

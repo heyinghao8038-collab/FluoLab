@@ -1,4 +1,4 @@
-﻿param([string]$DistributionDirectory = '', [string]$DemoDirectory = '', [string]$OptionalComponent = '')
+﻿param([string]$DistributionDirectory = '', [string]$DemoDirectory = '', [string]$OptionalComponent = '', [string]$Version = '1.4.1')
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
@@ -18,14 +18,14 @@ $names = @('FluoLab.exe','FluoLab.Cli.exe','FluoLab.Core.dll','FluoLab.Export.dl
     'Modules\Literature\worker.py','Modules\Literature\component.sha256','Modules\Literature\THIRD-PARTY-NOTICES.txt',
     'Modules\Mouse\index.html','Modules\Mouse\app.js','Modules\Mouse\app.css')
 $names += @(Get-ChildItem -LiteralPath (Join-Path $portable 'Modules\Mouse\licenses') -File | ForEach-Object { 'Modules\Mouse\licenses\'+$_.Name })
-Write-ReleaseZip (Join-Path $dist 'FluoLab-Portable-1.4.0.zip') $portable $names
+Write-ReleaseZip (Join-Path $dist ('FluoLab-Portable-'+$Version+'.zip')) $portable $names
 $demo = if ($DemoDirectory) { [IO.Path]::GetFullPath($DemoDirectory) } else { Join-Path $dist 'Synthetic-Demo' }
 if (-not (Test-Path -LiteralPath (Join-Path $demo 'README.txt'))) { throw 'Prepare the synthetic demo before packaging.' }
 $demoNames = @('README.txt','Trial-Record.md','Synthetic-English-Article.pdf','Synthetic-Mouse-Backup.json',
     'Synthetic-pH-analysis.xlsx','Synthetic-pH-response.png','Synthetic-pH-response.svg','Synthetic-pH-work.fluolab','Synthetic-pH-bundle.zip')
 $demoNames += @(Get-ChildItem -LiteralPath (Join-Path $demo 'ASC') -File -Filter '*.ASC' | ForEach-Object { 'ASC\'+$_.Name })
-Write-ReleaseZip (Join-Path $dist 'FluoLab-Synthetic-Demo-1.4.0.zip') $demo $demoNames
-$releaseFiles = @('FluoLab-Setup-1.4.0.exe','FluoLab-Portable-1.4.0.zip','FluoLab-Synthetic-Demo-1.4.0.zip')
+Write-ReleaseZip (Join-Path $dist ('FluoLab-Synthetic-Demo-'+$Version+'.zip')) $demo $demoNames
+$releaseFiles = @(('FluoLab-Setup-'+$Version+'.exe'),('FluoLab-Portable-'+$Version+'.zip'),('FluoLab-Synthetic-Demo-'+$Version+'.zip'))
 if ($OptionalComponent) {
     $expected = (Get-Content -LiteralPath (Join-Path $root 'Modules\Literature\component.sha256')).Trim()
     if ((Get-FileHash -Algorithm SHA256 -LiteralPath $OptionalComponent).Hash.ToLowerInvariant() -ne $expected) { throw 'Optional CPU pack digest mismatch.' }
@@ -34,5 +34,5 @@ if ($OptionalComponent) {
     $releaseFiles += 'FluoLab-Literature-CPU-1.0.zip'
 }
 $lines = foreach ($name in $releaseFiles) { (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $dist $name)).Hash.ToLowerInvariant() + '  ' + $name }
-[IO.File]::WriteAllLines((Join-Path $dist 'FluoLab-1.4.0-SHA256.txt'),$lines,[Text.Encoding]::ASCII)
+[IO.File]::WriteAllLines((Join-Path $dist ('FluoLab-'+$Version+'-SHA256.txt')),$lines,[Text.Encoding]::ASCII)
 Write-Host 'PASS: explicit-allowlist portable/demo ZIPs and release hashes created; no lab records packaged.'

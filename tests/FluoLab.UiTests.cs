@@ -110,12 +110,54 @@ namespace FluoLab.UiTests
                 Check(!((Button)Field(main, "phButton")).IsEnabled, "empty batch disables analysis entry");
                 main.Close();
                 SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
+                RunDashboardChecks(assembly);
                 RunModuleChecks(assembly);
                 app.Shutdown();
                 Console.WriteLine("PASS: WPF metadata/inclusion/wavelength/unit edits invalidate exports; new batch closes old analysis.");
                 return 0;
             }
             catch (Exception exception) { Console.Error.WriteLine(exception); return 1; }
+        }
+        private static void RunDashboardChecks(Assembly assembly)
+        {
+            var main = (Window)Activator.CreateInstance(assembly.GetType("FluoLab.App.MainWindow"));
+            main.Width = 1440; main.Height = 900; main.Left = -20000; main.ShowInTaskbar = false; main.Show(); Drain(main);
+            var source = PhDemo.CreateBatch();
+            var batch = new SpectrumBatch(source.SourceFolder, DateTimeOffset.Now, source.Files.Concat(new[] { FileProcessingResult.Failed(Path.Combine(source.SourceFolder, "模拟格式错误.ASC"), "第 3 行不是两列数值。") }).ToArray());
+            Call(main, "ApplyBatch", batch, TimeSpan.Zero);
+            WaitTask(main, (System.Threading.Tasks.Task)Call(main, "RefreshDashboardAsync", batch));
+            var dashboard = Field(main, "dashboard");
+            var property = dashboard.GetType().GetProperty("Report", BindingFlags.Instance | BindingFlags.NonPublic);
+            var report = (BatchCompletenessReport)property.GetValue(dashboard, null);
+            Check(report.Files.Length == 23 && report.ValidCount == 21 && report.TotalMeasurementCount == 82 && !report.CoverageConsistent, "dashboard reports every source and original measured point");
+            Check(((FrameworkElement)dashboard).Visibility == Visibility.Visible, "wide window displays sidebar");
+            Check(!Find<TextBlock>((DependencyObject)dashboard).Any(text => text.Text.Contains("成功率") || text.Text.Contains("%")), "dashboard contains no success rate");
+            Call(main, "ClearSelection"); Call(main, "ApplySelectedSeries");
+            ((TextBox)Field(main, "searchBox")).Text = "模拟条件 B"; Drain(main);
+            Check(object.ReferenceEquals(report, property.GetValue(dashboard, null)) && report.ValidCount == 21 && report.Files.Length == 23, "preview and search do not change full batch statistics");
+            Check(Find<TextBlock>((DependencyObject)dashboard).Any(text => text.Text.StartsWith("当前预览 0", StringComparison.Ordinal)), "preview count changes independently");
+            Find<Button>((DependencyObject)dashboard).Single(button => button.Content is string && ((string)button.Content).StartsWith("缺少 #DATA", StringComparison.Ordinal)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Drain(main);
+            var log = main.OwnedWindows.Cast<Window>().Single(window => window.Title == "处理日志");
+            var textContent = Find<TextBox>(log).Single().Text;
+            Check(textContent.Contains("模拟解析失败.ASC") && !textContent.Contains("模拟格式错误.ASC"), "failure category opens exact filtered filename/reason details"); log.Close();
+            main.Width = 900; Drain(main); Call(main, "UpdateDashboardLayout");
+            Check(((ColumnDefinition)Field(main, "dashboardColumn")).Width.Value == 0, "narrow window preserves chart width");
+            ((Button)Field(main, "dashboardToggle")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Drain(main);
+            Check(((Window)Field(main, "dashboardWindow")).IsVisible, "narrow overview opens movable owned window");
+            SetField(main, "isLoading", true); Call(main, "SetLoadingState", "new batch", true);
+            Check(property.GetValue(dashboard, null) == null && Field(main, "dashboardWindow") == null, "import start hides prior counts and detached overview");
+            var oldTask = (System.Threading.Tasks.Task)Call(main, "RefreshDashboardAsync", batch);
+            var empty = new SpectrumBatch(batch.SourceFolder, DateTimeOffset.Now, new FileProcessingResult[0]);
+            Call(main, "ApplyBatch", empty, TimeSpan.Zero); SetField(main, "isLoading", false); Call(main, "SetLoadingState", "", false);
+            WaitTask(main, oldTask); WaitTask(main, (System.Threading.Tasks.Task)Call(main, "RefreshDashboardAsync", empty));
+            report = (BatchCompletenessReport)property.GetValue(dashboard, null);
+            Check(report.Files.Length == 0 && report.TotalMeasurementCount == 0 && !report.CoverageConsistent, "stale worker cannot overwrite replacement/empty batch");
+            main.Width = 1440; Drain(main); Call(main, "UpdateDashboardLayout");
+            ((Button)Field(main, "dashboardToggle")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(((FrameworkElement)dashboard).Visibility == Visibility.Collapsed, "wide overview can collapse");
+            ((Button)Field(main, "dashboardToggle")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(((FrameworkElement)dashboard).Visibility == Visibility.Visible, "wide overview can expand again"); main.Close();
+            Console.WriteLine("PASS: batch dashboard totals, independent preview/search, filtered failure drilldown, responsive/collapse and stale worker guards.");
         }
         private static void RunModuleChecks(Assembly assembly)
         {

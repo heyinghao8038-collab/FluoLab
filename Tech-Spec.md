@@ -1,5 +1,19 @@
 # FluoLab Technical Specification
 
+## Version 1.4.1 Publication Tasks — 2026-10-22
+
+Update the existing exact-tag CI release path to v1.4.1, with minimal workflow edits and the existing read/write job permissions. Run the allowlist sanitizer, review the isolated Git diff and production-source parity, build/test/package that copy, then push main and the new tag without force. Poll anonymous GitHub Actions and release APIs; inspect asset names and sizes. Keep previous release and private workspace untouched. Public acceptance documentation must not disclose reference sample values, source paths or private cleaning-example identities.
+
+## Version 1.4.1 Dashboard Contract — 2026-10-22
+
+Extend the existing completeness report with `TotalMeasurementCount` (Int64 sum of valid PointCount), `CoverageConsistent` (valid count > 0 and union equals intersection), and a display-only failure category per failed row. Categories recognize only explicit existing parser messages; unknown reasons remain Other. Preserve the original reason and raw dataset contract. There is no percentage/rate property.
+
+`BatchDashboard` is a read-only WPF view consuming that report plus a separate preview count. It raises actions for failure category/details, never changes selection or analysis. MainWindow owns a cancellable background report request with batch identity and revision guards. Clear on import start; apply only the latest request; close detached overview/log snapshots on batch replacement. Reuse the report for completeness details when available. Narrow mode uses an owned overview window rather than an overlay over chart axes. Existing parsing, export and scientific services remain unchanged.
+
+Tasks: specification -> fixed synthetic sidebar -> screenshots -> MainWindow wiring -> core/UI stale and selection tests -> reference/performance regressions -> 1.4.1 build/package/docs. No new dependency, stack change, data upload or unrelated refactor.
+
+Raw plot tick density adapts to available height (1–5 Y intervals at >=28 DIP spacing); axis titles use concise Chinese labels. This is display-only, retaining original limits, hover lookup, zoom and all underlying measurements.
+
 ## Version 1.4 Contracts and Tasks — 2026-10-22
 
 - `BatchCompleteness.Create(SpectrumBatch, CancellationToken)` consumes existing parsed datasets only. It returns ordered file rows with basename, success/error, point count, nullable range and missing-from-union count, plus sorted exact numeric union/intersection arrays. Empty/all-failed batches have empty arrays and nullable ranges. Intersection means common measured points, not overlapping min/max intervals. No intensity values, mutation, reparse or automatic exclusion. Build on a worker; the window owns one immutable batch reference and never caches across imports. A standalone UTF-8 text summary omits absolute source paths; raw XLSX remains unchanged.

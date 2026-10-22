@@ -63,7 +63,7 @@ namespace FluoLab.Core
 
     public sealed class PhAnalysisResult
     {
-        public const string SoftwareVersion = "1.4.0";
+        public const string SoftwareVersion = "1.4.1";
         public double TargetWavelength { get; internal set; }
         public string IntensityUnit { get; internal set; }
         public string SourceBatchName { get; internal set; }

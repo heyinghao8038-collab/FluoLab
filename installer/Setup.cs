@@ -198,7 +198,7 @@ namespace FluoLab.Setup
 
                 var subtitle = new Label
                 {
-                    Text = "荧光数据分析器 1.4.0 · 完整性与文献核对",
+                    Text = "荧光数据分析器 1.4.1 · 本批数据概况",
                     Font = new Font("Microsoft YaHei UI", 11F),
                     ForeColor = Color.FromArgb(110, 110, 115),
                     AutoSize = true,
@@ -380,7 +380,7 @@ namespace FluoLab.Setup
                 @"Software\Microsoft\Windows\CurrentVersion\Uninstall\FluoLab"))
             {
                 key.SetValue("DisplayName", ProductName);
-                key.SetValue("DisplayVersion", "1.4.0");
+                key.SetValue("DisplayVersion", "1.4.1");
                 key.SetValue("Publisher", "FluoLab");
                 key.SetValue("InstallLocation", InstallFolder);
                 key.SetValue("DisplayIcon", Path.Combine(InstallFolder, "FluoLab.exe"));

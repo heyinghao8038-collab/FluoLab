@@ -1,5 +1,17 @@
 ﻿# FluoLab 荧光数据分析器 — 产品需求文档
 
+## Version 1.4.1 Public Release — 2026-10-22
+
+The owner now requests a GitHub update. Publish the reviewed 1.4.1 source from the isolated publication tree and create a new immutable version tag/release, preserving 1.4.0. Include CI-built installer, portable ZIP, synthetic demo and checksums. Exclude private data, reference assertions, local paths and memory. The existing optional CPU component remains compatible and separately distributed; do not imply that the main installer includes it. Acceptance requires public source, successful remote checks and anonymously accessible release assets, not merely a local push.
+
+## Version 1.4.1: Current-Batch Dashboard — 2026-10-22
+
+Add a teacher-facing batch overview beside the raw spectrum preview. Show discovered/valid/failed ASC counts (no success rate), total measured points across valid files, union wavelength range, exact common-point count, equal/different wavelength coverage, failure categories and current preview count. All batch metrics cover every discovered ASC regardless of preview/search selection. Do not add expected file counts, manual exclusion, quality scores or experimental-completeness claims. Failure means parser rejection only; negative intensity or unequal coverage is not failure. Files are never deleted.
+
+Click failure count/category to inspect filenames and original reasons through the existing processing-log view; click coverage to open existing completeness details. Reuse Theme. Wide windows show a collapsible 280-DIP right sidebar. Below 1200-DIP window width, collapse it and open the same overview in a movable owned window on demand, preserving chart width. Loading hides prior batch statistics; replacement/cancellation/error cannot apply stale summaries. Empty/all-failed/no-common-point states must be explicit.
+
+Acceptance: fixed synthetic layout review before runtime integration; count/point/coverage/category correctness; preview/search independence; filtered failure details; loading/replacement stale guards; collapse/narrow window behavior; raw/pH regressions and required size/scale renders. Deliver local 1.4.1 portable and installer, preserve running old binaries. No automatic public publication is required in this increment.
+
 ## Version 1.4: Finals Readiness — 2026-10-22
 
 Prioritize verifiable laboratory workflow improvements over new scientific methods. Add a read-only batch completeness view (file status, point count, numeric wavelength union/intersection and per-file missing coverage). It must not label negative intensities as bad, infer instrument quality, exclude files, or change the two-sheet raw export.

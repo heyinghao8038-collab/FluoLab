@@ -2,6 +2,12 @@
 
 This file is the visual source of truth for the first release.
 
+## Version 1.4.1 Batch Overview
+
+Place a 280-DIP white rounded overview to the right of the raw chart, with a divider and vertical scrolling. Header: `本批数据概况`; three compact discovered/valid/failed metrics; then measured-point count, union range, common-point count, explicit coverage status, failure-category buttons and preview-only note. No success-rate percentage, quality score or planned-count input. Failure count/category opens the existing read-only log filtered by category. Coverage opens existing completeness details. Keep full batch name in tooltip and no absolute path in synthetic screenshots.
+
+The chart toolbar provides `数据概况` and reset. At window widths below 1200 DIP, do not show the sidebar by default; the button opens a movable owned overview window. At larger widths it toggles the sidebar. Chart/axes must retain usable space. Counts are hidden while importing; display a loading note instead of old statistics. Zero/all-failed states show no invented wavelength range. Reuse all existing Theme tokens.
+
 ## Version 1.4 Completeness and Literature Review
 
 Keep Theme colors, native frame and wrapping Quick Actions. Add a secondary `批次完整性` action, disabled before import/during loading. Open an owned snapshot window with count/coverage summary, explicit non-QC explanation, filename filter and a virtualized read-only grid (file/status/points/range/missing count). Show empty/all-failed/no-common-point states in text; export a separate summary, never alter the raw workbook. Long names scroll and have full tooltips.
