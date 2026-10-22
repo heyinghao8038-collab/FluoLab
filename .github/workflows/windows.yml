@@ -26,8 +26,10 @@ jobs:
       - name: WPF controls and lifecycle tests
         shell: powershell
         run: |
+          $ErrorActionPreference = 'Continue'
           $uiOutput = & .\artifacts\build\FluoLab.UiTests.exe 2>&1
           $uiExitCode = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
           $uiOutput | ForEach-Object { Write-Host $_ }
           if ($uiExitCode -ne 0) {
             $uiOutput | ForEach-Object { Write-Host ('::error::' + ($_.ToString() -replace '%','%25' -replace "`r",'%0D' -replace "`n",'%0A')) }
